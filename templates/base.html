@@ -1,0 +1,113 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="HireSense AI — AI-powered hiring platform that ranks resumes, generates interview questions and hiring reports.">
+  <title>{% block title %}HireSense AI{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────── -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo-icon">🧠</div>
+    <div class="brand-name">Hire<span>Sense</span> AI</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+
+    <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <span class="nav-icon">📊</span> Dashboard
+    </a>
+
+    <div class="nav-section-label">Jobs</div>
+
+    <a href="{% url 'job_list' %}" class="nav-item {% if 'job' in request.resolver_match.url_name %}active{% endif %}">
+      <span class="nav-icon">💼</span> Job Descriptions
+    </a>
+    <a href="{% url 'job_create' %}" class="nav-item">
+      <span class="nav-icon">➕</span> Post New Job
+    </a>
+
+    <div class="nav-section-label">Candidates</div>
+
+    <a href="{% url 'candidate_list' %}" class="nav-item {% if request.resolver_match.url_name == 'candidate_list' %}active{% endif %}">
+      <span class="nav-icon">👥</span> All Candidates
+    </a>
+    <a href="{% url 'candidate_upload' %}" class="nav-item {% if request.resolver_match.url_name == 'candidate_upload' %}active{% endif %}">
+      <span class="nav-icon">📤</span> Upload Resume
+    </a>
+
+    <div class="nav-section-label">Account</div>
+
+    <a href="/admin/" class="nav-item" target="_blank">
+      <span class="nav-icon">⚙️</span> Admin Panel
+    </a>
+    <a href="{% url 'logout' %}" class="nav-item">
+      <span class="nav-icon">🚪</span> Logout
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="flex items-center gap-2">
+      <div class="user-avatar">{{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary)">
+          {{ request.user.get_full_name|default:request.user.username }}
+        </div>
+        <div class="text-xs text-muted">
+          {{ request.user.profile.role|default:"Recruiter"|title }}
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── Navbar ─────────────────────────────────── -->
+<nav class="navbar">
+  <div class="flex items-center gap-3">
+    <button id="sidebarToggle" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;display:none" aria-label="Toggle sidebar">
+      <i class="fas fa-bars"></i>
+    </button>
+    <span class="navbar-title">{% block page_title %}Dashboard{% endblock %}</span>
+  </div>
+  <div class="navbar-actions">
+    <a href="{% url 'candidate_upload' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus"></i> Upload Resume
+    </a>
+    <div class="navbar-user">
+      <div class="user-avatar">{{ request.user.first_name|first|upper }}{{ request.user.last_name|first|upper }}</div>
+      <span style="font-size:13px;font-weight:500">{{ request.user.username }}</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Main ──────────────────────────────────── -->
+<main class="main-content">
+  <!-- Flash Messages -->
+  {% if messages %}
+    <div style="margin-bottom:16px">
+      {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}">
+          <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/main.js' %}"></script>
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

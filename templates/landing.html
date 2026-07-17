@@ -1,0 +1,149 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="HireSense AI — Hire smarter with AI-powered resume screening, semantic matching, and automated ranking.">
+  <title>HireSense AI — Hire Smarter with AI</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body class="landing-page">
+
+<!-- ── Navbar ──────────────────────────────────── -->
+<nav class="landing-nav">
+  <div class="flex items-center gap-3">
+    <div style="width:36px;height:36px;background:linear-gradient(135deg,#4f9cf9,#2563eb);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 12px rgba(79,156,249,0.4)">🧠</div>
+    <span style="font-size:18px;font-weight:700;color:var(--text-primary)">Hire<span style="color:var(--accent)">Sense</span> AI</span>
+  </div>
+  <div class="flex items-center gap-3">
+    {% if user.is_authenticated %}
+      <a href="{% url 'dashboard' %}" class="btn btn-primary">Go to Dashboard</a>
+    {% else %}
+      <a href="{% url 'login' %}" class="btn btn-outline">Log In</a>
+      <a href="{% url 'signup' %}" class="btn btn-primary">Get Started Free</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- ── Hero ────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-badge">
+    <i class="fas fa-bolt" style="color:var(--warning)"></i>
+    AI-Powered Hiring Platform
+  </div>
+  <h1>
+    Hire <span class="gradient-text">Smarter</span>,<br>
+    Screen <span class="gradient-text">Faster</span>
+  </h1>
+  <p>
+    HireSense AI uses semantic NLP to automatically rank resumes,
+    score candidates against job descriptions, generate interview questions,
+    and produce detailed hiring reports — in seconds.
+  </p>
+  <div class="hero-buttons">
+    {% if user.is_authenticated %}
+      <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg">
+        <i class="fas fa-chart-bar"></i> Go to Dashboard
+      </a>
+    {% else %}
+      <a href="{% url 'signup' %}" class="btn btn-primary btn-lg">
+        <i class="fas fa-rocket"></i> Start for Free
+      </a>
+      <a href="{% url 'login' %}" class="btn btn-outline btn-lg">
+        <i class="fas fa-sign-in-alt"></i> Log In
+      </a>
+    {% endif %}
+  </div>
+
+  <!-- Stats bar -->
+  <div style="display:flex;justify-content:center;gap:48px;margin-top:64px;flex-wrap:wrap">
+    <div style="text-align:center">
+      <div style="font-size:32px;font-weight:800;color:var(--accent)">10×</div>
+      <div style="font-size:13px;color:var(--text-muted)">Faster Screening</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:32px;font-weight:800;color:var(--success)">95%</div>
+      <div style="font-size:13px;color:var(--text-muted)">Accuracy Rate</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:32px;font-weight:800;color:var(--warning)">∞</div>
+      <div style="font-size:13px;color:var(--text-muted)">Resumes Processed</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ─────────────────────────────────── -->
+<section class="features">
+  <div class="feature-card">
+    <div class="feature-icon">📄</div>
+    <h3 class="feature-title">Smart Resume Parsing</h3>
+    <p class="feature-desc">
+      Automatically extracts name, email, skills, education, experience, and projects from PDF and DOCX resumes.
+    </p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🧠</div>
+    <h3 class="feature-title">Semantic Matching</h3>
+    <p class="feature-desc">
+      Uses Sentence Transformers to compute deep semantic similarity between resumes and job descriptions — beyond keyword matching.
+    </p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">📊</div>
+    <h3 class="feature-title">Explainable Scoring</h3>
+    <p class="feature-desc">
+      Every candidate gets a transparent score broken down by skills, experience, education, projects, and semantic relevance.
+    </p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🏆</div>
+    <h3 class="feature-title">Candidate Ranking</h3>
+    <p class="feature-desc">
+      Instantly rank all applicants from best to worst fit, with tier labels (Excellent, Good, Average) for quick decisions.
+    </p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">💬</div>
+    <h3 class="feature-title">Interview Questions</h3>
+    <p class="feature-desc">
+      Automatically generates tailored technical and behavioral interview questions based on the candidate's matched skills.
+    </p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">📑</div>
+    <h3 class="feature-title">PDF Hiring Reports</h3>
+    <p class="feature-desc">
+      Generate beautiful, downloadable PDF reports summarising all candidates ranked by score for a job position.
+    </p>
+  </div>
+</section>
+
+<!-- ── CTA ──────────────────────────────────────── -->
+<section style="text-align:center;padding:80px 60px;border-top:1px solid var(--border)">
+  <h2 style="font-size:36px;font-weight:800;margin-bottom:16px">
+    Ready to hire <span style="color:var(--accent)">smarter</span>?
+  </h2>
+  <p style="color:var(--text-secondary);font-size:16px;margin-bottom:32px">
+    Join your team and start screening candidates with AI today.
+  </p>
+  {% if not user.is_authenticated %}
+    <a href="{% url 'signup' %}" class="btn btn-primary btn-lg">
+      <i class="fas fa-user-plus"></i> Create Free Account
+    </a>
+  {% else %}
+    <a href="{% url 'candidate_upload' %}" class="btn btn-primary btn-lg">
+      <i class="fas fa-upload"></i> Upload Your First Resume
+    </a>
+  {% endif %}
+</section>
+
+<!-- ── Footer ───────────────────────────────────── -->
+<footer style="padding:24px 60px;border-top:1px solid var(--border);text-align:center;color:var(--text-muted);font-size:13px">
+  © 2024 HireSense AI. Built with Django + AI/NLP.
+</footer>
+
+<script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Candidates — HireSense AI{% endblock %}
+{% block page_title %}Candidates{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Candidates</h1>
+    <p class="page-subtitle">{{ candidates.count }} candidate{{ candidates.count|pluralize }} found</p>
+  </div>
+  <a href="{% url 'candidate_upload' %}" class="btn btn-primary">
+    <i class="fas fa-upload"></i> Upload Resume
+  </a>
+</div>
+
+<!-- Search & Filters -->
+<div class="card mb-6" style="padding:16px 20px">
+  <form method="get" class="flex items-center gap-3" style="flex-wrap:wrap">
+    <div class="search-box" style="flex:1;min-width:220px">
+      <span class="search-icon"><i class="fas fa-search"></i></span>
+      <input type="text" name="q" value="{{ query }}" placeholder="Search by name, email, skill..."
+             class="form-control search-input">
+    </div>
+    <select name="sort" class="form-select" style="width:auto">
+      <option value="-created_at" {% if sort == '-created_at' %}selected{% endif %}>Newest First</option>
+      <option value="created_at"  {% if sort == 'created_at' %}selected{% endif %}>Oldest First</option>
+      <option value="name"        {% if sort == 'name' %}selected{% endif %}>Name A→Z</option>
+      <option value="-name"       {% if sort == '-name' %}selected{% endif %}>Name Z→A</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="fas fa-filter"></i> Filter
+    </button>
+    {% if query %}
+      <a href="{% url 'candidate_list' %}" class="btn btn-outline btn-sm">
+        <i class="fas fa-times"></i> Clear
+      </a>
+    {% endif %}
+  </form>
+</div>
+
+{% if candidates %}
+  <div class="card">
+    <div class="table-wrapper">
+      <table class="hs-table">
+        <thead>
+          <tr>
+            <th>Candidate</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Skills</th>
+            <th>Analyses</th>
+            <th>Uploaded</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for candidate in candidates %}
+            <tr>
+              <td>
+                <a href="{% url 'candidate_detail' candidate.pk %}" style="color:var(--text-primary);font-weight:600;display:flex;align-items:center;gap:10px">
+                  <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4f9cf9,#2563eb);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0">
+                    {{ candidate.name|first|upper|default:"?" }}
+                  </div>
+                  {{ candidate.name|default:"Unknown" }}
+                </a>
+              </td>
+              <td class="text-sm text-muted">{{ candidate.email|default:"—" }}</td>
+              <td class="text-sm text-muted">{{ candidate.phone|default:"—" }}</td>
+              <td>
+                {% for skill in candidate.get_skills|slice:":3" %}
+                  <span class="skill-pill neutral">{{ skill }}</span>
+                {% endfor %}
+                {% if candidate.get_skills|length > 3 %}
+                  <span class="text-xs text-muted">+{{ candidate.get_skills|length|add:"-3" }}</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge badge-blue">{{ candidate.analyses.count }}</span>
+              </td>
+              <td class="text-sm text-muted">{{ candidate.created_at|date:"M d, Y" }}</td>
+              <td>
+                <div class="flex gap-1">
+                  <a href="{% url 'candidate_detail' candidate.pk %}" class="btn btn-outline btn-sm">View</a>
+                  <a href="{% url 'candidate_delete' candidate.pk %}"
+                     class="btn btn-danger btn-sm"
+                     data-confirm="Delete {{ candidate.name }}? This cannot be undone.">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  <div class="card" style="text-align:center;padding:64px">
+    <div style="font-size:56px;margin-bottom:16px">👤</div>
+    <h2 style="font-weight:700;margin-bottom:8px">
+      {% if query %}No results for "{{ query }}"{% else %}No candidates yet{% endif %}
+    </h2>
+    <p style="color:var(--text-secondary);margin-bottom:24px">
+      {% if query %}Try a different search term.{% else %}Upload your first resume to get started.{% endif %}
+    </p>
+    <a href="{% url 'candidate_upload' %}" class="btn btn-primary btn-lg">
+      <i class="fas fa-upload"></i> Upload Resume
+    </a>
+  </div>
+{% endif %}
+{% endblock %}

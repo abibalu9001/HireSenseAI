@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Jobs — HireSense AI{% endblock %}
+{% block page_title %}Job Descriptions{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Job Descriptions</h1>
+    <p class="page-subtitle">{{ jobs.count }} active position{{ jobs.count|pluralize }}</p>
+  </div>
+  <a href="{% url 'job_create' %}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Post New Job
+  </a>
+</div>
+
+{% if jobs %}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px">
+    {% for job in jobs %}
+      <div class="card" style="display:flex;flex-direction:column;gap:0">
+        <div style="margin-bottom:16px">
+          <div class="flex items-center justify-between mb-3">
+            <h3 style="font-size:16px;font-weight:700;color:var(--text-primary)">{{ job.title }}</h3>
+            <span class="badge badge-success">Active</span>
+          </div>
+          <p style="font-size:13px;color:var(--text-secondary);line-height:1.6">
+            {{ job.description|truncatechars:120 }}
+          </p>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+          {% for skill in job.get_required_skills|slice:":6" %}
+            <span class="skill-pill neutral">{{ skill }}</span>
+          {% endfor %}
+          {% if job.get_required_skills|length > 6 %}
+            <span class="skill-pill neutral">+{{ job.get_required_skills|length|add:"-6" }} more</span>
+          {% endif %}
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border)">
+          <div class="flex gap-3 text-sm text-muted">
+            <span><i class="fas fa-users"></i> {{ job.candidate_count }}</span>
+            <span><i class="fas fa-calendar"></i> {{ job.created_at|date:"M d, Y" }}</span>
+          </div>
+          <div class="flex gap-2">
+            <a href="{% url 'job_detail' job.pk %}" class="btn btn-outline btn-sm">View</a>
+            <a href="{% url 'generate_report' job.pk %}" class="btn btn-primary btn-sm">
+              <i class="fas fa-file-pdf"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="text-align:center;padding:64px">
+    <div style="font-size:56px;margin-bottom:16px">💼</div>
+    <h2 style="font-weight:700;margin-bottom:8px">No jobs posted yet</h2>
+    <p style="color:var(--text-secondary);margin-bottom:24px">Create your first job description to start screening candidates.</p>
+    <a href="{% url 'job_create' %}" class="btn btn-primary btn-lg">
+      <i class="fas fa-plus"></i> Post First Job
+    </a>
+  </div>
+{% endif %}
+{% endblock %}

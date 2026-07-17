@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% block title %}Analysis — {{ analysis.candidate.name }} — HireSense AI{% endblock %}
+{% block page_title %}AI Analysis Report{% endblock %}
+{% block content %}
+
+<!-- Header -->
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="page-title">{{ analysis.candidate.name|default:"Candidate" }}</h1>
+    <p class="page-subtitle">
+      vs <strong>{{ analysis.job.title }}</strong> ·
+      Rank #{{ rank }} of {{ total_for_job }} ·
+      Analysed {{ analysis.created_at|date:"M d, Y H:i" }}
+    </p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'candidate_detail' analysis.candidate.pk %}" class="btn btn-outline">
+      <i class="fas fa-user"></i> Candidate
+    </a>
+    <a href="{% url 'job_detail' analysis.job.pk %}" class="btn btn-outline">
+      <i class="fas fa-briefcase"></i> Job
+    </a>
+    <a href="{% url 'run_analysis' analysis.candidate.pk analysis.job.pk %}" class="btn btn-primary">
+      <i class="fas fa-sync"></i> Re-Analyse
+    </a>
+  </div>
+</div>
+
+<!-- Score Overview -->
+<div class="grid-2 mb-6">
+  <!-- Score Ring -->
+  <div class="card" style="text-align:center">
+    <div class="card-header">
+      <span class="card-title">🎯 Overall Score</span>
+      <span class="badge badge-{{ tier_class }}">{{ tier_label }}</span>
+    </div>
+    <div class="score-ring">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r="58" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="12"/>
+        <circle class="score-ring-circle"
+                cx="70" cy="70" r="58"
+                fill="none" stroke="#4f9cf9" stroke-width="12"
+                stroke-linecap="round"
+                data-score="{{ analysis.total_score }}"/>
+      </svg>
+      <div class="score-ring-text">
+        <div class="score-ring-value">{{ analysis.total_score|floatformat:0 }}<span style="font-size:18px">%</span></div>
+        <div class="score-ring-label">Match Score</div>
+      </div>
+    </div>
+    <div class="flex justify-between mt-4 text-sm" style="border-top:1px solid var(--border);padding-top:14px">
+      <div style="text-align:center">
+        <div style="font-weight:700;color:var(--success);font-size:18px">{{ matched_skills|length }}</div>
+        <div class="text-muted">Matched</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-weight:700;color:var(--danger);font-size:18px">{{ missing_skills|length }}</div>
+        <div class="text-muted">Missing</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-weight:700;color:var(--accent);font-size:18px">#{{ rank }}</div>
+        <div class="text-muted">Ranking</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score Breakdown Bars -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📊 Score Breakdown</span>
+    </div>
+    <canvas id="radarChart" height="220"></canvas>
+  </div>
+</div>
+
+<!-- Score Bars -->
+<div class="card mb-6">
+  <div class="card-header">
+    <span class="card-title">📈 Category Scores</span>
+  </div>
+  {% for label, value in score_breakdown.items %}
+    <div class="score-bar-row">
+      <div class="score-bar-label">{{ label }}</div>
+      <div class="score-bar-track">
+        <div class="score-bar-fill" data-width="{{ value }}"></div>
+      </div>
+      <div class="score-bar-value">{{ value }}%</div>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- Skills Row -->
+<div class="grid-2 mb-6">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">✅ Matched Skills ({{ matched_skills|length }})</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap">
+      {% for skill in matched_skills %}
+        <span class="skill-pill matched"><i class="fas fa-check" style="font-size:9px"></i> {{ skill }}</span>
+      {% empty %}
+        <p class="text-sm text-muted">No skills matched.</p>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">❌ Missing Skills ({{ missing_skills|length }})</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap">
+      {% for skill in missing_skills %}
+        <span class="skill-pill missing"><i class="fas fa-times" style="font-size:9px"></i> {{ skill }}</span>
+      {% empty %}
+        <p class="text-sm text-success">All required skills are present! 🎉</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Interview Questions -->
+<div class="card mb-6">
+  <div class="card-header">
+    <span class="card-title">💬 Interview Questions ({{ questions.count }})</span>
+    <div class="flex gap-2">
+      <span class="badge badge-blue">AI Generated</span>
+    </div>
+  </div>
+  {% for q in questions %}
+    <div class="question-card">
+      <div class="question-meta">
+        <span class="badge badge-{% if q.category == 'technical' %}blue{% elif q.category == 'behavioral' %}success{% elif q.category == 'situational' %}warning{% else %}info{% endif %}">
+          {{ q.get_category_display }}
+        </span>
+        <span class="badge badge-{% if q.difficulty == 'easy' %}success{% elif q.difficulty == 'medium' %}warning{% else %}danger{% endif %}">
+          {{ q.get_difficulty_display }}
+        </span>
+        {% if q.skill_tag %}
+          <span class="badge badge-muted">{{ q.skill_tag }}</span>
+        {% endif %}
+      </div>
+      <div class="question-text">{{ forloop.counter }}. {{ q.question }}</div>
+    </div>
+  {% empty %}
+    <p class="text-sm text-muted" style="text-align:center;padding:24px">No questions generated yet.</p>
+  {% endfor %}
+</div>
+
+<!-- Suggestions -->
+{% if suggestions %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">💡 Resume Improvement Suggestions</span>
+  </div>
+  {% for suggestion in suggestions %}
+    <div class="suggestion-item">{{ suggestion }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Radar chart
+const radarCtx = document.getElementById('radarChart');
+if (radarCtx) {
+  new Chart(radarCtx, {
+    type: 'radar',
+    data: {
+      labels: {{ score_labels|safe }},
+      datasets: [{
+        label: 'Score',
+        data: {{ score_values|safe }},
+        backgroundColor: 'rgba(79,156,249,0.15)',
+        borderColor: '#4f9cf9',
+        borderWidth: 2,
+        pointBackgroundColor: '#4f9cf9',
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { color: '#64748b', stepSize: 20, backdropColor: 'transparent' },
+          grid: { color: 'rgba(255,255,255,0.07)' },
+          pointLabels: { color: '#94a3b8', font: { size: 12 } }
+        }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+</script>
+{% endblock %}

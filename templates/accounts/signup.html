@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign Up — HireSense AI</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    .auth-card { max-width: 520px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .errorlist { list-style: none; padding: 0; margin: 4px 0 0; }
+    .errorlist li { font-size: 12px; color: var(--danger); }
+  </style>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-badge">🧠</div>
+      <h1 class="auth-title">Create Account</h1>
+      <p class="auth-sub">Join HireSense AI for free</p>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-error">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          {{ form.first_name }}
+          {{ form.first_name.errors }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          {{ form.last_name }}
+          {{ form.last_name.errors }}
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        {{ form.username }}
+        {{ form.username.errors }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        {{ form.email }}
+        {{ form.email.errors }}
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Company</label>
+          {{ form.company }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          {{ form.role }}
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          {{ form.password1 }}
+          {{ form.password1.errors }}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          {{ form.password2 }}
+          {{ form.password2.errors }}
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100" style="justify-content:center;margin-top:4px">
+        <i class="fas fa-user-plus"></i> Create Account
+      </button>
+    </form>
+
+    <div class="auth-divider"><span>already have an account?</span></div>
+    <div style="text-align:center">
+      <a href="{% url 'login' %}" class="btn btn-outline w-100" style="justify-content:center">
+        <i class="fas fa-sign-in-alt"></i> Sign In Instead
+      </a>
+    </div>
+    <div style="text-align:center;margin-top:16px">
+      <a href="{% url 'landing' %}" style="font-size:13px;color:var(--text-muted)">
+        <i class="fas fa-arrow-left"></i> Back to home
+      </a>
+    </div>
+  </div>
+</div>
+<script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block title %}{{ candidate.name|default:"Candidate" }} — HireSense AI{% endblock %}
+{% block page_title %}{{ candidate.name|default:"Candidate Profile" }}{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <div class="flex items-center gap-4">
+    <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#4f9cf9,#2563eb);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;box-shadow:0 0 20px rgba(79,156,249,0.4)">
+      {{ candidate.name|first|upper|default:"?" }}
+    </div>
+    <div>
+      <h1 class="page-title">{{ candidate.name|default:"Unknown Candidate" }}</h1>
+      <div class="flex gap-3 text-sm text-muted mt-1">
+        {% if candidate.email %}<span><i class="fas fa-envelope"></i> {{ candidate.email }}</span>{% endif %}
+        {% if candidate.phone %}<span><i class="fas fa-phone"></i> {{ candidate.phone }}</span>{% endif %}
+        <span><i class="fas fa-calendar"></i> {{ candidate.created_at|date:"M d, Y" }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="flex gap-2">
+    <a href="{{ candidate.resume_file.url }}" class="btn btn-outline" target="_blank">
+      <i class="fas fa-file-download"></i> Resume
+    </a>
+    <a href="{% url 'candidate_delete' candidate.pk %}" class="btn btn-danger"
+       data-confirm="Delete {{ candidate.name }}? This action cannot be undone.">
+      <i class="fas fa-trash"></i>
+    </a>
+  </div>
+</div>
+
+<div class="grid-2 mb-6">
+  <!-- Skills -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🛠 Extracted Skills ({{ skills|length }})</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap">
+      {% for skill in skills %}
+        <span class="skill-pill neutral">{{ skill }}</span>
+      {% empty %}
+        <p class="text-muted text-sm">No skills extracted. The resume may need re-parsing.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Run Analysis -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">⚡ Run Analysis</span>
+    </div>
+    <p class="text-sm text-muted mb-4">Select a job and run AI analysis to get a match score, interview questions, and improvement tips.</p>
+    <form method="get" action="#" id="runAnalysisForm">
+      <div class="form-group">
+        <label class="form-label">Select Job</label>
+        <select class="form-select" id="jobSelect">
+          <option value="">— Choose a job —</option>
+          {% for analysis in analyses %}
+            <option value="{{ analysis.job.pk }}">{{ analysis.job.title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <a href="#" id="runAnalysisBtn" class="btn btn-primary w-100" style="justify-content:center;opacity:0.5;pointer-events:none">
+        <i class="fas fa-brain"></i> Run AI Analysis
+      </a>
+    </form>
+  </div>
+</div>
+
+<!-- Education / Experience / Projects -->
+<div class="grid-3 mb-6">
+  <div class="card">
+    <div class="card-header"><span class="card-title">🎓 Education</span></div>
+    <p style="font-size:13px;color:var(--text-secondary);white-space:pre-wrap;max-height:150px;overflow-y:auto">
+      {{ candidate.education_raw|default:"Not extracted"|truncatechars:300 }}
+    </p>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">💼 Experience</span></div>
+    <p style="font-size:13px;color:var(--text-secondary);white-space:pre-wrap;max-height:150px;overflow-y:auto">
+      {{ candidate.experience_raw|default:"Not extracted"|truncatechars:300 }}
+    </p>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">🚀 Projects</span></div>
+    <p style="font-size:13px;color:var(--text-secondary);white-space:pre-wrap;max-height:150px;overflow-y:auto">
+      {{ candidate.projects_raw|default:"Not extracted"|truncatechars:300 }}
+    </p>
+  </div>
+</div>
+
+<!-- Analyses -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">📊 Analysis History</span>
+    <span class="badge badge-blue">{{ analyses.count }}</span>
+  </div>
+  {% if analyses %}
+    <div class="table-wrapper">
+      <table class="hs-table">
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Score</th>
+            <th>Skills</th>
+            <th>Semantic</th>
+            <th>Matched</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for analysis in analyses %}
+            <tr>
+              <td style="font-weight:600;color:var(--text-primary)">{{ analysis.job.title }}</td>
+              <td>
+                <span style="font-weight:700;font-size:15px;color:
+                  {% if analysis.total_score >= 80 %}var(--success)
+                  {% elif analysis.total_score >= 65 %}var(--accent)
+                  {% elif analysis.total_score >= 50 %}var(--warning)
+                  {% else %}var(--danger){% endif %}">
+                  {{ analysis.total_score|floatformat:1 }}%
+                </span>
+              </td>
+              <td class="text-sm">{{ analysis.skills_score|floatformat:0 }}%</td>
+              <td class="text-sm">{{ analysis.similarity_score|floatformat:0 }}%</td>
+              <td class="text-sm text-success">{{ analysis.matched_skills_raw|truncatechars:40 }}</td>
+              <td class="text-sm text-muted">{{ analysis.created_at|date:"M d, Y" }}</td>
+              <td>
+                <a href="{% url 'analysis_detail' analysis.pk %}" class="btn btn-outline btn-sm">
+                  <i class="fas fa-eye"></i> View
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align:center;padding:32px;color:var(--text-muted)">
+      <p>No analyses yet. Select a job above and click "Run AI Analysis".</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const jobSelect = document.getElementById('jobSelect');
+const runBtn = document.getElementById('runAnalysisBtn');
+const candidateId = {{ candidate.pk }};
+
+jobSelect.addEventListener('change', function() {
+  if (this.value) {
+    runBtn.href = `/analysis/run/${candidateId}/${this.value}/`;
+    runBtn.style.opacity = '1';
+    runBtn.style.pointerEvents = 'auto';
+  } else {
+    runBtn.style.opacity = '0.5';
+    runBtn.style.pointerEvents = 'none';
+  }
+});
+</script>
+{% endblock %}

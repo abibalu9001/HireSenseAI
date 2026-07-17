@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Upload Resume — HireSense AI{% endblock %}
+{% block page_title %}Upload Resume{% endblock %}
+{% block content %}
+
+<div style="max-width:640px;margin:0 auto">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Upload Resume</h1>
+      <p class="page-subtitle">AI will auto-parse name, skills, education and experience</p>
+    </div>
+    <a href="{% url 'candidate_list' %}" class="btn btn-outline">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+  </div>
+
+  <div class="card">
+    <form method="post" enctype="multipart/form-data" id="uploadForm">
+      {% csrf_token %}
+
+      <!-- Drag & Drop Zone -->
+      <div class="dropzone" id="dropzone">
+        <input type="file" name="resume_file" id="resumeFile" accept=".pdf,.docx,.doc" required>
+        <div class="dropzone-icon">📄</div>
+        <div class="dropzone-text">Drag & drop your resume here</div>
+        <div class="dropzone-sub">or click to browse · PDF, DOCX · Max 50MB</div>
+        <div id="fileName" style="margin-top:12px"></div>
+      </div>
+
+      <!-- Select Job -->
+      <div class="form-group mt-4">
+        <label class="form-label">
+          <i class="fas fa-briefcase" style="color:var(--accent)"></i>
+          Analyse against a Job (optional)
+        </label>
+        <select name="job" class="form-select">
+          <option value="">— Skip for now —</option>
+          {% for job in jobs %}
+            <option value="{{ job.pk }}">{{ job.title }}</option>
+          {% endfor %}
+        </select>
+        <p class="form-hint">If selected, AI analysis will run automatically after upload.</p>
+      </div>
+
+      <!-- AI Features callout -->
+      <div style="background:var(--accent-light);border:1px solid var(--border-hover);border-radius:var(--radius);padding:16px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px">
+          <i class="fas fa-magic"></i> What the AI will do automatically:
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;color:var(--text-secondary)">
+          <div>✅ Extract candidate name</div>
+          <div>✅ Find email & phone</div>
+          <div>✅ Identify all skills</div>
+          <div>✅ Parse education history</div>
+          <div>✅ Extract work experience</div>
+          <div>✅ Detect projects section</div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100" style="justify-content:center" id="submitBtn">
+        <i class="fas fa-upload"></i> Upload & Parse Resume
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function() {
+  const btn = document.getElementById('submitBtn');
+  btn.innerHTML = '<span class="spinner"></span> Processing...';
+  btn.disabled = true;
+});
+</script>
+{% endblock %}
