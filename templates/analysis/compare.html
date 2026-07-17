@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% block title %}Candidate Comparison — HireSense AI{% endblock %}
+{% block page_title %}Candidate Comparison{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="page-title">Candidate Comparison</h1>
+    <p class="page-subtitle">Comparing candidates side-by-side for <strong>{{ job.title }}</strong></p>
+  </div>
+  <a href="{% url 'job_detail' job.pk %}" class="btn btn-outline">
+    <i class="fas fa-arrow-left"></i> Back to Job details
+  </a>
+</div>
+
+<!-- AI Verdict Card -->
+<div class="card mb-6" style="border-left: 4px solid var(--accent); background: linear-gradient(135deg, rgba(79, 156, 249, 0.05) 0%, rgba(30, 58, 95, 0.02) 100%);">
+  <div class="card-header" style="border:none; padding-bottom: 0;">
+    <span class="card-title" style="color: var(--accent);"><i class="fas fa-robot"></i> AI Comparison Verdict</span>
+  </div>
+  <div style="padding: 16px 20px; font-size: 15px; line-height: 1.7; color: var(--text-primary);">
+    {{ verdict|linebreaks }}
+  </div>
+</div>
+
+<!-- Comparison Table Card -->
+<div class="card">
+  <div class="table-wrapper">
+    <table class="hs-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+      <thead>
+        <tr style="background-color: var(--card-bg); border-bottom: 2px solid var(--border-color);">
+          <th style="width: 25%; font-size: 15px;">Metric</th>
+          <th style="width: 37.5%; font-size: 16px; font-weight: 700; color: var(--accent); text-align: center;">
+            {% if anonymous_mode %}Candidate #{{ a1.candidate.pk }}{% else %}{{ a1.candidate.name|default:"Unknown" }}{% endif %}
+          </th>
+          <th style="width: 37.5%; font-size: 16px; font-weight: 700; color: var(--accent); text-align: center;">
+            {% if anonymous_mode %}Candidate #{{ a2.candidate.pk }}{% else %}{{ a2.candidate.name|default:"Unknown" }}{% endif %}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Match Score -->
+        <tr style="border-bottom: 1px solid var(--border-color); font-weight: 700; background-color: rgba(79, 156, 249, 0.03);">
+          <td style="padding: 18px 16px; font-size: 15px; color: var(--text-primary);">Overall Match Score</td>
+          <td style="text-align: center; padding: 18px 16px;">
+            <span style="font-size: 22px; color: {% if a1.final_score >= 80 %}var(--success){% elif a1.final_score >= 65 %}var(--accent){% elif a1.final_score >= 50 %}var(--warning){% else %}var(--danger){% endif %};">
+              {{ a1.final_score|floatformat:1 }}%
+            </span>
+            {% if a1.manual_score_override is not None %}
+              <div class="text-xs text-muted" style="margin-top: 4px; font-weight: normal;"><i class="fas fa-user-edit"></i> Recruiter Override</div>
+            {% endif %}
+          </td>
+          <td style="text-align: center; padding: 18px 16px;">
+            <span style="font-size: 22px; color: {% if a2.final_score >= 80 %}var(--success){% elif a2.final_score >= 65 %}var(--accent){% elif a2.final_score >= 50 %}var(--warning){% else %}var(--danger){% endif %};">
+              {{ a2.final_score|floatformat:1 }}%
+            </span>
+            {% if a2.manual_score_override is not None %}
+              <div class="text-xs text-muted" style="margin-top: 4px; font-weight: normal;"><i class="fas fa-user-edit"></i> Recruiter Override</div>
+            {% endif %}
+          </td>
+        </tr>
+
+        <!-- Skills Score -->
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 16px; color: var(--text-secondary);">Skills Match Score</td>
+          <td style="padding: 16px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="score-bar-track" style="width: 150px; height: 8px;">
+                <div class="score-bar-fill" data-width="{{ a1.skills_score|floatformat:0 }}" style="width: {{ a1.skills_score|floatformat:0 }}%;"></div>
+              </div>
+              <span style="font-weight: 600;">{{ a1.skills_score|floatformat:0 }}%</span>
+            </div>
+          </td>
+          <td style="padding: 16px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="score-bar-track" style="width: 150px; height: 8px;">
+                <div class="score-bar-fill" data-width="{{ a2.skills_score|floatformat:0 }}" style="width: {{ a2.skills_score|floatformat:0 }}%;"></div>
+              </div>
+              <span style="font-weight: 600;">{{ a2.skills_score|floatformat:0 }}%</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Semantic Similarity -->
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 16px; color: var(--text-secondary);">Semantic Similarity</td>
+          <td style="padding: 16px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="score-bar-track" style="width: 150px; height: 8px;">
+                <div class="score-bar-fill" data-width="{{ a1.similarity_score|floatformat:0 }}" style="width: {{ a1.similarity_score|floatformat:0 }}%;"></div>
+              </div>
+              <span style="font-weight: 600;">{{ a1.similarity_score|floatformat:0 }}%</span>
+            </div>
+          </td>
+          <td style="padding: 16px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="score-bar-track" style="width: 150px; height: 8px;">
+                <div class="score-bar-fill" data-width="{{ a2.similarity_score|floatformat:0 }}" style="width: {{ a2.similarity_score|floatformat:0 }}%;"></div>
+              </div>
+              <span style="font-weight: 600;">{{ a2.similarity_score|floatformat:0 }}%</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Experience Score -->
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 16px; color: var(--text-secondary);">Experience Match</td>
+          <td style="padding: 16px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="score-bar-track" style="width: 150px; height: 8px;">
+                <div class="score-bar-fill" data-width="{{ a1.experience_score|floatformat:0 }}" style="width: {{ a1.experience_score|floatformat:0 }}%;"></div>
+              </div>
+              <span style="font-weight: 600;">{{ a1.experience_score|floatformat:0 }}%</span>
+            </div>
+          </td>
+          <td style="padding: 16px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="score-bar-track" style="width: 150px; height: 8px;">
+                <div class="score-bar-fill" data-width="{{ a2.experience_score|floatformat:0 }}" style="width: {{ a2.experience_score|floatformat:0 }}%;"></div>
+              </div>
+              <span style="font-weight: 600;">{{ a2.experience_score|floatformat:0 }}%</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Education Score -->
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 16px; color: var(--text-secondary);">Education Match</td>
+          <td style="padding: 16px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="score-bar-track" style="width: 150px; height: 8px;">
+                <div class="score-bar-fill" data-width="{{ a1.education_score|floatformat:0 }}" style="width: {{ a1.education_score|floatformat:0 }}%;"></div>
+              </div>
+              <span style="font-weight: 600;">{{ a1.education_score|floatformat:0 }}%</span>
+            </div>
+          </td>
+          <td style="padding: 16px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="score-bar-track" style="width: 150px; height: 8px;">
+                <div class="score-bar-fill" data-width="{{ a2.education_score|floatformat:0 }}" style="width: {{ a2.education_score|floatformat:0 }}%;"></div>
+              </div>
+              <span style="font-weight: 600;">{{ a2.education_score|floatformat:0 }}%</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Projects Score -->
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 16px; color: var(--text-secondary);">Projects Evaluation</td>
+          <td style="padding: 16px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="score-bar-track" style="width: 150px; height: 8px;">
+                <div class="score-bar-fill" data-width="{{ a1.projects_score|floatformat:0 }}" style="width: {{ a1.projects_score|floatformat:0 }}%;"></div>
+              </div>
+              <span style="font-weight: 600;">{{ a1.projects_score|floatformat:0 }}%</span>
+            </div>
+          </td>
+          <td style="padding: 16px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+              <div class="score-bar-track" style="width: 150px; height: 8px;">
+                <div class="score-bar-fill" data-width="{{ a2.projects_score|floatformat:0 }}" style="width: {{ a2.projects_score|floatformat:0 }}%;"></div>
+              </div>
+              <span style="font-weight: 600;">{{ a2.projects_score|floatformat:0 }}%</span>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Matched Skills -->
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 16px; color: var(--text-secondary); font-weight: 600;">Matched Skills</td>
+          <td style="padding: 16px; vertical-align: top;">
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              {% for skill in a1.get_matched_skills %}
+                <span class="skill-pill success">{{ skill }}</span>
+              {% empty %}
+                <span class="text-muted text-sm">None</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td style="padding: 16px; vertical-align: top;">
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              {% for skill in a2.get_matched_skills %}
+                <span class="skill-pill success">{{ skill }}</span>
+              {% empty %}
+                <span class="text-muted text-sm">None</span>
+              {% endfor %}
+            </div>
+          </td>
+        </tr>
+
+        <!-- Missing Skills -->
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 16px; color: var(--text-secondary); font-weight: 600;">Missing Skills</td>
+          <td style="padding: 16px; vertical-align: top;">
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              {% for skill in a1.get_missing_skills %}
+                <span class="skill-pill danger">{{ skill }}</span>
+              {% empty %}
+                <span class="text-success text-sm">None (100% matched)</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td style="padding: 16px; vertical-align: top;">
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              {% for skill in a2.get_missing_skills %}
+                <span class="skill-pill danger">{{ skill }}</span>
+              {% empty %}
+                <span class="text-success text-sm">None (100% matched)</span>
+              {% endfor %}
+            </div>
+          </td>
+        </tr>
+
+        <!-- Resume Integrity / Fraud Score -->
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 16px; color: var(--text-secondary); font-weight: 600;">Resume Integrity (Fraud Score)</td>
+          <td style="padding: 16px; text-align: center;">
+            <span style="font-weight: 700; color: {% if a1.candidate.fraud_score >= 60 %}var(--danger){% elif a1.candidate.fraud_score >= 30 %}var(--warning){% else %}var(--success){% endif %};">
+              {{ a1.candidate.fraud_score }}% Risk
+            </span>
+            <div class="text-xs text-muted" style="margin-top: 4px;">{{ a1.candidate.get_fraud_flags|length }} flag{{ a1.candidate.get_fraud_flags|pluralize }}</div>
+          </td>
+          <td style="padding: 16px; text-align: center;">
+            <span style="font-weight: 700; color: {% if a2.candidate.fraud_score >= 60 %}var(--danger){% elif a2.candidate.fraud_score >= 30 %}var(--warning){% else %}var(--success){% endif %};">
+              {{ a2.candidate.fraud_score }}% Risk
+            </span>
+            <div class="text-xs text-muted" style="margin-top: 4px;">{{ a2.candidate.get_fraud_flags|length }} flag{{ a2.candidate.get_fraud_flags|pluralize }}</div>
+          </td>
+        </tr>
+
+        <!-- ATS Status -->
+        <tr style="border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 16px; color: var(--text-secondary); font-weight: 600;">ATS Pipeline Status</td>
+          <td style="padding: 16px; text-align: center;">
+            <span class="badge {% if a1.status == 'shortlisted' %}badge-blue{% elif a1.status == 'interview' %}badge-blue{% elif a1.status == 'accepted' %}badge-success{% elif a1.status == 'rejected' %}badge-danger{% else %}badge-neutral{% endif %}">
+              {{ a1.get_status_display }}
+            </span>
+          </td>
+          <td style="padding: 16px; text-align: center;">
+            <span class="badge {% if a2.status == 'shortlisted' %}badge-blue{% elif a2.status == 'interview' %}badge-blue{% elif a2.status == 'accepted' %}badge-success{% elif a2.status == 'rejected' %}badge-danger{% else %}badge-neutral{% endif %}">
+              {{ a2.get_status_display }}
+            </span>
+          </td>
+        </tr>
+
+        <!-- Actions -->
+        <tr>
+          <td style="padding: 16px;"></td>
+          <td style="padding: 16px; text-align: center;">
+            <a href="{% url 'analysis_detail' a1.pk %}" class="btn btn-outline btn-sm">
+              <i class="fas fa-eye"></i> View Full Analysis
+            </a>
+          </td>
+          <td style="padding: 16px; text-align: center;">
+            <a href="{% url 'analysis_detail' a2.pk %}" class="btn btn-outline btn-sm">
+              <i class="fas fa-eye"></i> View Full Analysis
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

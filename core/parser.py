@@ -204,3 +204,92 @@ def parse_job_description(text):
             ['skills', 'experience', 'responsibilities']
         ),
     }
+
+
+def detect_resume_fraud(text, experience_text=None):
+    """
+    Analyzes resume text for common fraud/gaming heuristics.
+    Returns: (fraud_score, list_of_warning_flags)
+    """
+    if not text:
+        return 0, []
+
+    fraud_score = 0
+    warning_flags = []
+    text_lower = text.lower()
+
+    # 1. Keyword Stuffing Check
+    from core.nlp import extract_skills
+    skills = extract_skills(text)
+    for skill in skills:
+        pattern = r'\b' + re.escape(skill.lower()) + r'\b'
+        count = len(re.findall(pattern, text_lower))
+        if count > 7:
+            warning_flags.append(f"Keyword Stuffing: Skill '{skill}' is repeated {count} times (suspiciously high).")
+            fraud_score += 15
+
+    # 2. Unrealistic Experience Checks
+    from core.nlp import extract_years_of_experience
+    total_years = extract_years_of_experience(experience_text or text)
+    if total_years > 40:
+        warning_flags.append(f"Unrealistic Experience: Candidate claims {total_years} years of work experience.")
+        fraud_score += 30
+
+    # Specific technology release date checks
+    tech_release_checks = [
+        ("docker", 2013, 13),
+        ("kubernetes", 2014, 12),
+        ("react", 2013, 13),
+        ("angular", 2010, 16),
+        ("vue", 2014, 12),
+        ("tensorflow", 2015, 11),
+    ]
+    for tech, release_year, max_years in tech_release_checks:
+        if tech in text_lower:
+            # Look for experience matching tech
+            pattern = r'(?:experience(?:\s+with|\s+in)?\s+|\b' + tech + r'\b[^\d]*?)(\d+)\+?\s*(?:years|yrs)'
+            matches = re.findall(pattern, text_lower)
+            for match in matches:
+                years = int(match)
+                if years > max_years:
+                    warning_flags.append(
+                        f"Unrealistic Experience: Claims {years} years of {tech.title()} experience "
+                        f"({tech.title()} was released in {release_year}, max {max_years} years)."
+                    )
+                    fraud_score += 25
+
+    # 3. Suspicious Timeline Gaps (Work Gaps)
+    exp_to_search = experience_text or text
+    years = sorted(list(set([int(y) for y in re.findall(r'\b(19\d{2}|20\d{2})\b', exp_to_search)])))
+    # Check gap between consecutive years in experience
+    if len(years) >= 2:
+        max_gap = 0
+        for i in range(len(years) - 1):
+            gap = years[i+1] - years[i]
+            # Ignore gaps that look like graduation-to-work or ancient gaps
+            if gap > 3 and years[i] > 2005:
+                max_gap = max(max_gap, gap)
+        if max_gap > 3:
+            warning_flags.append(f"Suspicious Timeline Gap: A career gap of {max_gap} years was detected in history.")
+            fraud_score += 15
+
+    # 4. Hidden Text / Skill Padding Density Check
+    # Look for long blocks of text with abnormally high skill density
+    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+    for p in paragraphs[:15]: # check top paragraphs where resume keywords are stuffed
+        if len(p) > 100:
+            p_skills = extract_skills(p)
+            if p_skills:
+                # Calculate what fraction of characters are within skill words
+                skill_chars = sum(len(s) for s in p_skills)
+                density = skill_chars / len(p)
+                if density > 0.65 and len(p_skills) > 8:
+                    warning_flags.append("Hidden Text/Skill Padding: Extremely high keyword density (skills block with no prose) detected.")
+                    fraud_score += 20
+                    break
+
+    # Cap fraud score at 100
+    fraud_score = min(fraud_score, 100)
+    
+    return fraud_score, warning_flags
+

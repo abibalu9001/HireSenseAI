@@ -25,7 +25,20 @@ class ResumeAnalysis(models.Model):
     # Suggestions
     suggestions = models.TextField(blank=True)
 
+    # Recruiter Override & ATS Pipeline fields
+    STATUS_CHOICES = [
+        ('applied', 'Applied'),
+        ('shortlisted', 'Shortlisted'),
+        ('interview', 'Interview Scheduled'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='applied')
+    recruiter_notes = models.TextField(blank=True)
+    manual_score_override = models.FloatField(blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
+
 
     def get_matched_skills(self):
         if self.matched_skills_raw:
@@ -50,6 +63,13 @@ class ResumeAnalysis(models.Model):
             'Education': round(self.education_score, 1),
             'Projects': round(self.projects_score, 1),
         }
+
+    @property
+    def final_score(self):
+        if self.manual_score_override is not None:
+            return self.manual_score_override
+        return self.total_score
+
 
     class Meta:
         ordering = ['-total_score']

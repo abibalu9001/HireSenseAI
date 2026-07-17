@@ -6,13 +6,14 @@
 <!-- Header -->
 <div class="flex items-center justify-between mb-6">
   <div>
-    <h1 class="page-title">{{ analysis.candidate.name|default:"Candidate" }}</h1>
+    <h1 class="page-title">{% if anonymous_mode %}Candidate #{{ analysis.candidate.pk }}{% else %}{{ analysis.candidate.name|default:"Candidate" }}{% endif %}</h1>
     <p class="page-subtitle">
       vs <strong>{{ analysis.job.title }}</strong> ·
       Rank #{{ rank }} of {{ total_for_job }} ·
       Analysed {{ analysis.created_at|date:"M d, Y H:i" }}
     </p>
   </div>
+
   <div class="flex gap-2">
     <a href="{% url 'candidate_detail' analysis.candidate.pk %}" class="btn btn-outline">
       <i class="fas fa-user"></i> Candidate
@@ -41,12 +42,13 @@
                 cx="70" cy="70" r="58"
                 fill="none" stroke="#4f9cf9" stroke-width="12"
                 stroke-linecap="round"
-                data-score="{{ analysis.total_score }}"/>
+                data-score="{{ analysis.final_score }}"/>
       </svg>
       <div class="score-ring-text">
-        <div class="score-ring-value">{{ analysis.total_score|floatformat:0 }}<span style="font-size:18px">%</span></div>
-        <div class="score-ring-label">Match Score</div>
+        <div class="score-ring-value">{{ analysis.final_score|floatformat:0 }}<span style="font-size:18px">%</span></div>
+        <div class="score-ring-label">{% if analysis.manual_score_override is not None %}Override Score{% else %}Match Score{% endif %}</div>
       </div>
+
     </div>
     <div class="flex justify-between mt-4 text-sm" style="border-top:1px solid var(--border);padding-top:14px">
       <div style="text-align:center">
@@ -72,6 +74,89 @@
     <canvas id="radarChart" height="220"></canvas>
   </div>
 </div>
+
+<!-- New Grid: Integrity & Recruiter Decisions -->
+<div class="grid-2 mb-6">
+  <!-- Resume Integrity (Fraud Assessment) -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🛡️ Resume Integrity (Fraud Assessment)</span>
+      <span class="badge badge-{% if analysis.candidate.fraud_score >= 60 %}danger{% elif analysis.candidate.fraud_score >= 30 %}warning{% else %}success{% endif %}">
+        {% if analysis.candidate.fraud_score >= 60 %}High Risk
+        {% elif analysis.candidate.fraud_score >= 30 %}Medium Risk
+        {% else %}Low Risk{% endif %}
+      </span>
+    </div>
+    
+    <div style="text-align: center; margin: 15px 0;">
+      <div style="font-size: 32px; font-weight: 800; color: {% if analysis.candidate.fraud_score >= 60 %}var(--danger){% elif analysis.candidate.fraud_score >= 30 %}var(--warning){% else %}var(--success){% endif %};">
+        {{ analysis.candidate.fraud_score }}%
+      </div>
+      <div class="text-xs text-muted">Overall Fraud/Cheating Risk Rating</div>
+    </div>
+    
+    <div style="max-height: 140px; overflow-y: auto;">
+      {% if analysis.candidate.get_fraud_flags %}
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          {% for flag in analysis.candidate.get_fraud_flags %}
+            <div style="padding:8px 12px; background:rgba(239, 68, 68, 0.05); border-left:3px solid var(--danger); border-radius:4px; font-size:12px; color:var(--text-primary);">
+              <i class="fas fa-exclamation-triangle" style="color:var(--warning); margin-right:6px"></i> {{ flag }}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align: center; padding: 15px; color: var(--text-muted);">
+          <i class="fas fa-check-circle" style="color: var(--success); font-size: 20px; margin-bottom: 8px; display: block;"></i>
+          <span class="text-sm">No fraud indicators detected. Resume is highly genuine.</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recruiter Decision & Pipeline Overrides -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📝 Recruiter Reviews & ATS Feedback Loop</span>
+    </div>
+    
+    <form action="{% url 'update_analysis_feedback' analysis.pk %}" method="POST" style="display: flex; flex-direction: column; gap: 10px;">
+      {% csrf_token %}
+      
+      <!-- Pipeline Status -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label for="status" style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">Hiring Stage / Status</label>
+        <select name="status" id="status" class="copilot-input" style="width: 100%; border-radius: 6px;">
+          {% for val, name in analysis.STATUS_CHOICES %}
+            <option value="{{ val }}" {% if analysis.status == val %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <!-- Manual Score Override -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label for="manual_score_override" style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">Manual Override Rating (0-100%)</label>
+        <input type="number" name="manual_score_override" id="manual_score_override" 
+               class="copilot-input" style="width: 100%; border-radius: 6px;" 
+               placeholder="Enter custom score to override AI match rating" 
+               min="0" max="100" step="0.1" 
+               value="{{ analysis.manual_score_override|default_if_none:'' }}">
+      </div>
+      
+      <!-- Recruiter notes -->
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label for="recruiter_notes" style="font-size: 11px; font-weight: 600; color: var(--text-secondary);">Recruiter Feedback / Notes</label>
+        <textarea name="recruiter_notes" id="recruiter_notes" 
+                  class="copilot-input" style="width: 100%; height: 50px; border-radius: 6px; resize: none;" 
+                  placeholder="Annotate candidate details, screening details, or soft skills overrides...">{{ analysis.recruiter_notes }}</textarea>
+      </div>
+      
+      <button type="submit" class="btn btn-primary btn-sm" style="align-self: flex-end; margin-top: 2px;">
+        <i class="fas fa-save"></i> Save Feedback Changes
+      </button>
+    </form>
+  </div>
+</div>
+
 
 <!-- Score Bars -->
 <div class="card mb-6">

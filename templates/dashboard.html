@@ -99,25 +99,26 @@
             <tr>
               <td>
                 <a href="{% url 'candidate_detail' analysis.candidate.pk %}" style="color:var(--text-primary);font-weight:600">
-                  {{ analysis.candidate.name|default:"Unknown" }}
+                  {% if anonymous_mode %}Candidate #{{ analysis.candidate.pk }}{% else %}{{ analysis.candidate.name|default:"Unknown" }}{% endif %}
                 </a>
               </td>
               <td style="color:var(--text-secondary)">{{ analysis.job.title|truncatechars:30 }}</td>
               <td>
                 <span style="font-size:15px;font-weight:700;color:
-                  {% if analysis.total_score >= 80 %}var(--success)
-                  {% elif analysis.total_score >= 65 %}var(--accent)
-                  {% elif analysis.total_score >= 50 %}var(--warning)
+                  {% if analysis.final_score >= 80 %}var(--success)
+                  {% elif analysis.final_score >= 65 %}var(--accent)
+                  {% elif analysis.final_score >= 50 %}var(--warning)
                   {% else %}var(--danger){% endif %}">
-                  {{ analysis.total_score|floatformat:1 }}%
+                  {{ analysis.final_score|floatformat:1 }}%
                 </span>
               </td>
               <td>
-                {% if analysis.total_score >= 80 %}<span class="badge badge-success">Excellent</span>
-                {% elif analysis.total_score >= 65 %}<span class="badge badge-blue">Good</span>
-                {% elif analysis.total_score >= 50 %}<span class="badge badge-warning">Average</span>
+                {% if analysis.final_score >= 80 %}<span class="badge badge-success">Excellent</span>
+                {% elif analysis.final_score >= 65 %}<span class="badge badge-blue">Good</span>
+                {% elif analysis.final_score >= 50 %}<span class="badge badge-warning">Average</span>
                 {% else %}<span class="badge badge-danger">Below Avg</span>{% endif %}
               </td>
+
               <td class="text-sm text-muted">{{ analysis.matched_skills_raw|truncatechars:40 }}</td>
               <td class="text-sm text-muted">{{ analysis.created_at|date:"M d" }}</td>
               <td>

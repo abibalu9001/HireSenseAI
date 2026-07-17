@@ -51,9 +51,14 @@
 
 <!-- Ranked Candidates -->
 <div class="card">
-  <div class="card-header">
-    <span class="card-title">🏆 Candidates Ranked by Score</span>
-    <span class="badge badge-blue">{{ analyses.count }} total</span>
+  <div class="card-header flex items-center justify-between" style="display:flex; justify-content:space-between; align-items:center; width:100%">
+    <div class="flex items-center gap-2" style="display:flex; align-items:center; gap:8px">
+      <span class="card-title">🏆 Candidates Ranked by Score</span>
+      <span class="badge badge-blue">{{ analyses.count }} total</span>
+    </div>
+    <button id="compareBtn" class="btn btn-outline btn-sm" style="display:none; align-items:center; gap:6px" onclick="compareSelected()">
+      <i class="fas fa-columns"></i> Compare Selected (<span id="compareCount">0</span>)
+    </button>
   </div>
 
   {% if analyses %}
@@ -61,9 +66,11 @@
       <table class="hs-table">
         <thead>
           <tr>
+            <th style="width:40px">Select</th>
             <th>Rank</th>
             <th>Candidate</th>
             <th>Score</th>
+
             <th>Tier</th>
             <th>Skills Match</th>
             <th>Matched</th>
@@ -74,6 +81,9 @@
         <tbody>
           {% for analysis in analyses %}
             <tr>
+              <td>
+                <input type="checkbox" class="compare-check" value="{{ analysis.pk }}" onchange="updateCompareBtn()">
+              </td>
               <td style="font-weight:700;color:
                 {% if forloop.counter == 1 %}var(--warning)
                 {% elif forloop.counter == 2 %}#94a3b8
@@ -87,25 +97,32 @@
               </td>
               <td>
                 <a href="{% url 'candidate_detail' analysis.candidate.pk %}" style="color:var(--text-primary);font-weight:600">
-                  {{ analysis.candidate.name|default:"Unknown" }}
+                  {% if anonymous_mode %}Candidate #{{ analysis.candidate.pk }}{% else %}{{ analysis.candidate.name|default:"Unknown" }}{% endif %}
                 </a>
-                <div class="text-xs text-muted">{{ analysis.candidate.email }}</div>
+                {% if not anonymous_mode %}
+                  <div class="text-xs text-muted">{{ analysis.candidate.email }}</div>
+                {% endif %}
               </td>
+
               <td>
                 <span style="font-size:16px;font-weight:700;color:
-                  {% if analysis.total_score >= 80 %}var(--success)
-                  {% elif analysis.total_score >= 65 %}var(--accent)
-                  {% elif analysis.total_score >= 50 %}var(--warning)
+                  {% if analysis.final_score >= 80 %}var(--success)
+                  {% elif analysis.final_score >= 65 %}var(--accent)
+                  {% elif analysis.final_score >= 50 %}var(--warning)
                   {% else %}var(--danger){% endif %}">
-                  {{ analysis.total_score|floatformat:1 }}%
+                  {{ analysis.final_score|floatformat:1 }}%
                 </span>
+                {% if analysis.manual_score_override is not None %}
+                  <div class="text-xs text-muted" style="font-size: 10px;"><i class="fas fa-user-edit"></i> Modified</div>
+                {% endif %}
               </td>
               <td>
-                {% if analysis.total_score >= 80 %}<span class="badge badge-success">Excellent</span>
-                {% elif analysis.total_score >= 65 %}<span class="badge badge-blue">Good</span>
-                {% elif analysis.total_score >= 50 %}<span class="badge badge-warning">Average</span>
+                {% if analysis.final_score >= 80 %}<span class="badge badge-success">Excellent</span>
+                {% elif analysis.final_score >= 65 %}<span class="badge badge-blue">Good</span>
+                {% elif analysis.final_score >= 50 %}<span class="badge badge-warning">Average</span>
                 {% else %}<span class="badge badge-danger">Below Avg</span>{% endif %}
               </td>
+
               <td>
                 <div style="display:flex;align-items:center;gap:8px">
                   <div class="score-bar-track" style="width:80px">
@@ -141,4 +158,148 @@
     </div>
   {% endif %}
 </div>
+
+<!-- Copilot Chat Trigger -->
+<button class="copilot-trigger" id="copilotTrigger" onclick="toggleCopilot()" title="Recruiter AI Copilot">
+  <i class="fas fa-robot"></i>
+</button>
+
+<!-- Copilot Chat Panel -->
+<div class="copilot-panel" id="copilotPanel">
+  <div class="copilot-header">
+    <div class="copilot-title">
+      <i class="fas fa-robot" style="color: var(--accent);"></i>
+      AI Recruiter Copilot
+    </div>
+    <button class="copilot-close" onclick="toggleCopilot()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  <div class="copilot-body" id="copilotBody">
+    <div class="copilot-msg ai">
+      <p>Hello! I am your <strong>AI Recruiter Copilot</strong>. I can help you evaluate candidates for this job description. You can ask me:</p>
+      <p>• <em>"Recommend the top candidates."</em></p>
+      <p>• <em>"Who has Python and React experience?"</em></p>
+      <p>• <em>"Why is Candidate #2 ranked below Candidate #1?"</em></p>
+      <p>• <em>"Compare Candidate #1 and Candidate #2."</em></p>
+    </div>
+  </div>
+  <div class="copilot-footer">
+    <input type="text" class="copilot-input" id="copilotInput" placeholder="Ask a question about candidates..." onkeypress="handleChatKeypress(event)">
+    <button class="copilot-send" onclick="sendCopilotMessage()">
+      <i class="fas fa-paper-plane"></i>
+    </button>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+  function updateCompareBtn() {
+    const checked = document.querySelectorAll('.compare-check:checked');
+    const btn = document.getElementById('compareBtn');
+    const count = document.getElementById('compareCount');
+    
+    if (checked.length > 0) {
+      btn.style.display = 'inline-flex';
+      count.textContent = checked.length;
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  function compareSelected() {
+    const checked = document.querySelectorAll('.compare-check:checked');
+    if (checked.length !== 2) {
+      alert("Please select exactly 2 candidates to compare side-by-side.");
+      return;
+    }
+    const a1 = checked[0].value;
+    const a2 = checked[1].value;
+    window.location.href = `{% url 'compare_analyses' %}?a1=${a1}&a2=${a2}`;
+  }
+
+  function toggleCopilot() {
+    const panel = document.getElementById('copilotPanel');
+    panel.classList.toggle('active');
+    if (panel.classList.contains('active')) {
+      document.getElementById('copilotInput').focus();
+    }
+  }
+
+  function handleChatKeypress(e) {
+    if (e.key === 'Enter') {
+      sendCopilotMessage();
+    }
+  }
+
+  function sendCopilotMessage() {
+    const input = document.getElementById('copilotInput');
+    const query = input.value.trim();
+    if (!query) return;
+
+    input.value = '';
+    
+    const chatBody = document.getElementById('copilotBody');
+    
+    // Append user message
+    const userMsgDiv = document.createElement('div');
+    userMsgDiv.className = 'copilot-msg user';
+    userMsgDiv.textContent = query;
+    chatBody.appendChild(userMsgDiv);
+    
+    // Append typing indicator
+    const typingIndicator = document.createElement('div');
+    typingIndicator.className = 'copilot-typing';
+    typingIndicator.id = 'copilotTyping';
+    typingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Copilot is thinking...';
+    chatBody.appendChild(typingIndicator);
+    
+    chatBody.scrollTop = chatBody.scrollHeight;
+    
+    // Fetch response from server
+    fetch('{% url "copilot_chat" job.pk %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({ message: query })
+    })
+    .then(res => res.json())
+    .then(data => {
+      // Remove typing indicator
+      const indicator = document.getElementById('copilotTyping');
+      if (indicator) indicator.remove();
+      
+      // Append AI message
+      const aiMsgDiv = document.createElement('div');
+      aiMsgDiv.className = 'copilot-msg ai';
+      
+      // Basic markdown replacement for bold and newlines
+      let formattedText = data.reply
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>');
+      
+      aiMsgDiv.innerHTML = formattedText;
+      chatBody.appendChild(aiMsgDiv);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    })
+    .catch(err => {
+      console.error(err);
+      const indicator = document.getElementById('copilotTyping');
+      if (indicator) indicator.remove();
+      
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'copilot-msg ai';
+      errorDiv.style.borderColor = 'var(--danger)';
+      errorDiv.innerHTML = '<span style="color:var(--danger)">Error: Failed to connect to Copilot.</span>';
+      chatBody.appendChild(errorDiv);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    });
+  }
+</script>
 {% endblock %}
+{% endblock %}
+
+

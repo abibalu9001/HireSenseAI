@@ -1,32 +1,37 @@
 {% extends 'base.html' %}
-{% block title %}{{ candidate.name|default:"Candidate" }} — HireSense AI{% endblock %}
-{% block page_title %}{{ candidate.name|default:"Candidate Profile" }}{% endblock %}
+{% block title %}{% if anonymous_mode %}Candidate #{{ candidate.pk }}{% else %}{{ candidate.name|default:"Candidate" }}{% endif %} — HireSense AI{% endblock %}
+{% block page_title %}{% if anonymous_mode %}Candidate #{{ candidate.pk }}{% else %}{{ candidate.name|default:"Candidate Profile" }}{% endif %}{% endblock %}
 {% block content %}
 
 <div class="flex items-center justify-between mb-6">
   <div class="flex items-center gap-4">
     <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#4f9cf9,#2563eb);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:white;box-shadow:0 0 20px rgba(79,156,249,0.4)">
-      {{ candidate.name|first|upper|default:"?" }}
+      {% if anonymous_mode %}C{% else %}{{ candidate.name|first|upper|default:"?" }}{% endif %}
     </div>
     <div>
-      <h1 class="page-title">{{ candidate.name|default:"Unknown Candidate" }}</h1>
+      <h1 class="page-title">{% if anonymous_mode %}Candidate #{{ candidate.pk }}{% else %}{{ candidate.name|default:"Unknown Candidate" }}{% endif %}</h1>
       <div class="flex gap-3 text-sm text-muted mt-1">
-        {% if candidate.email %}<span><i class="fas fa-envelope"></i> {{ candidate.email }}</span>{% endif %}
-        {% if candidate.phone %}<span><i class="fas fa-phone"></i> {{ candidate.phone }}</span>{% endif %}
+        {% if not anonymous_mode %}
+          {% if candidate.email %}<span><i class="fas fa-envelope"></i> {{ candidate.email }}</span>{% endif %}
+          {% if candidate.phone %}<span><i class="fas fa-phone"></i> {{ candidate.phone }}</span>{% endif %}
+        {% endif %}
         <span><i class="fas fa-calendar"></i> {{ candidate.created_at|date:"M d, Y" }}</span>
       </div>
     </div>
   </div>
   <div class="flex gap-2">
-    <a href="{{ candidate.resume_file.url }}" class="btn btn-outline" target="_blank">
-      <i class="fas fa-file-download"></i> Resume
-    </a>
+    {% if not anonymous_mode %}
+      <a href="{{ candidate.resume_file.url }}" class="btn btn-outline" target="_blank">
+        <i class="fas fa-file-download"></i> Resume
+      </a>
+    {% endif %}
     <a href="{% url 'candidate_delete' candidate.pk %}" class="btn btn-danger"
        data-confirm="Delete {{ candidate.name }}? This action cannot be undone.">
       <i class="fas fa-trash"></i>
     </a>
   </div>
 </div>
+
 
 <div class="grid-2 mb-6">
   <!-- Skills -->

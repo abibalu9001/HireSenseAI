@@ -10,7 +10,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body {% if anonymous_mode %}class="bias-free-active"{% endif %}>
+
 
 <!-- ── Sidebar ──────────────────────────────────── -->
 <aside class="sidebar" id="sidebar">
@@ -77,7 +78,11 @@
     </button>
     <span class="navbar-title">{% block page_title %}Dashboard{% endblock %}</span>
   </div>
-  <div class="navbar-actions">
+  <div class="navbar-actions" style="display:flex; align-items:center; gap:12px">
+    <a href="{% url 'toggle_anonymous' %}" class="btn btn-sm {% if anonymous_mode %}btn-success{% else %}btn-outline{% endif %}" style="display:inline-flex; align-items:center; gap:6px; border-radius: 20px" title="Toggle Bias-Free Anonymization">
+      <i class="fas {% if anonymous_mode %}fa-user-secret{% else %}fa-user-check{% endif %}"></i>
+      {% if anonymous_mode %}Bias-Free: ON{% else %}Bias-Free Mode{% endif %}
+    </a>
     <a href="{% url 'candidate_upload' %}" class="btn btn-primary btn-sm">
       <i class="fas fa-plus"></i> Upload Resume
     </a>
@@ -86,6 +91,7 @@
       <span style="font-size:13px;font-weight:500">{{ request.user.username }}</span>
     </div>
   </div>
+
 </nav>
 
 <!-- ── Main ──────────────────────────────────── -->

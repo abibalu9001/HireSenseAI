@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from candidates.models import Candidate
 from jobs.models import JobDescription
@@ -51,3 +51,11 @@ def dashboard(request):
         'top_jobs': top_jobs,
     }
     return render(request, 'dashboard.html', context)
+
+
+def toggle_anonymous(request):
+    """Toggle Bias-Free Anonymous Hiring Mode."""
+    request.session['anonymous_mode'] = not request.session.get('anonymous_mode', False)
+    referer = request.META.get('HTTP_REFERER', 'dashboard')
+    return redirect(referer)
+

@@ -12,13 +12,25 @@ class Candidate(models.Model):
     education_raw = models.TextField(blank=True)
     experience_raw = models.TextField(blank=True)
     projects_raw = models.TextField(blank=True)
+    
+    # Fraud Detection fields
+    fraud_score = models.IntegerField(default=0)
+    fraud_flags_raw = models.TextField(blank=True, help_text="Comma-separated fraud warning flags")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
 
     def get_skills(self):
         if self.skills_raw:
             return [s.strip() for s in self.skills_raw.split(',') if s.strip()]
         return []
+
+    def get_fraud_flags(self):
+        if self.fraud_flags_raw:
+            return [f.strip() for f in self.fraud_flags_raw.split('|') if f.strip()]
+        return []
+
 
     def __str__(self):
         return self.name or f"Candidate #{self.pk}"

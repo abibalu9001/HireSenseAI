@@ -3,10 +3,10 @@
 
 def rank_candidates(analyses_queryset):
     """
-    Sort a queryset or list of ResumeAnalysis objects by total_score descending.
+    Sort a queryset or list of ResumeAnalysis objects by final_score descending.
     Returns a list of (rank, analysis) tuples.
     """
-    sorted_analyses = sorted(analyses_queryset, key=lambda a: a.total_score, reverse=True)
+    sorted_analyses = sorted(analyses_queryset, key=lambda a: a.final_score, reverse=True)
     return [(idx + 1, analysis) for idx, analysis in enumerate(sorted_analyses)]
 
 
@@ -15,11 +15,12 @@ def get_percentile(analysis, all_analyses):
     Compute what percentile this candidate's score falls in (within the same job).
     Returns 0-100 float.
     """
-    scores = [a.total_score for a in all_analyses]
+    scores = [a.final_score for a in all_analyses]
     if not scores:
         return 0
-    below = sum(1 for s in scores if s < analysis.total_score)
+    below = sum(1 for s in scores if s < analysis.final_score)
     return round((below / len(scores)) * 100, 1)
+
 
 
 def get_tier(score):

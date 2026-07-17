@@ -48,6 +48,10 @@ def candidate_upload(request):
             parsed = parse_resume(raw_text)
             skills = extract_skills(raw_text)
 
+            # Detect fraud
+            from core.parser import detect_resume_fraud
+            fraud_score, fraud_flags = detect_resume_fraud(raw_text, parsed.get('experience_text', ''))
+
             candidate = Candidate.objects.create(
                 name=parsed.get('name', ''),
                 email=parsed.get('email', ''),
@@ -58,7 +62,10 @@ def candidate_upload(request):
                 education_raw=parsed.get('education_text', ''),
                 experience_raw=parsed.get('experience_text', ''),
                 projects_raw=parsed.get('projects_text', ''),
+                fraud_score=fraud_score,
+                fraud_flags_raw='|'.join(fraud_flags),
             )
+
             messages.success(request, f'Resume uploaded! Candidate: {candidate.name or "Unknown"}')
 
             # Auto-run analysis if job is selected

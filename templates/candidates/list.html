@@ -59,13 +59,26 @@
               <td>
                 <a href="{% url 'candidate_detail' candidate.pk %}" style="color:var(--text-primary);font-weight:600;display:flex;align-items:center;gap:10px">
                   <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4f9cf9,#2563eb);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0">
-                    {{ candidate.name|first|upper|default:"?" }}
+                    {% if anonymous_mode %}C{% else %}{{ candidate.name|first|upper|default:"?" }}{% endif %}
                   </div>
-                  {{ candidate.name|default:"Unknown" }}
+                  {% if anonymous_mode %}Candidate #{{ candidate.pk }}{% else %}{{ candidate.name|default:"Unknown" }}{% endif %}
                 </a>
               </td>
-              <td class="text-sm text-muted">{{ candidate.email|default:"—" }}</td>
-              <td class="text-sm text-muted">{{ candidate.phone|default:"—" }}</td>
+              <td class="text-sm text-muted">
+                {% if anonymous_mode %}
+                  <span style="filter:blur(4px); user-select:none">masked@email.com</span>
+                {% else %}
+                  {{ candidate.email|default:"—" }}
+                {% endif %}
+              </td>
+              <td class="text-sm text-muted">
+                {% if anonymous_mode %}
+                  <span style="filter:blur(4px); user-select:none">+XX XXXXX-XXXXX</span>
+                {% else %}
+                  {{ candidate.phone|default:"—" }}
+                {% endif %}
+              </td>
+
               <td>
                 {% for skill in candidate.get_skills|slice:":3" %}
                   <span class="skill-pill neutral">{{ skill }}</span>
